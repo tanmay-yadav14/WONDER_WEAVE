@@ -17,6 +17,16 @@ export function SearchSection() {
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
+  // Date helpers using local time to avoid timezone issues
+  const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`)
+  const formatDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+  const addDaysStr = (dateStr: string, days: number) => {
+    const d = new Date(dateStr)
+    d.setDate(d.getDate() + days)
+    return formatDate(d)
+  }
+  const todayStr = formatDate(new Date())
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
     try {
@@ -122,7 +132,23 @@ export function SearchSection() {
                 <input
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  min={todayStr}
+                  onChange={(e) => {
+                    const nextStart = e.target.value
+                    setStartDate(nextStart)
+                    // Ensure end date is always AFTER start date
+                    if (nextStart) {
+                      const minReturn = addDaysStr(nextStart, 1)
+                      if (!endDate || endDate <= nextStart || endDate < minReturn) {
+                        setEndDate(minReturn)
+                      }
+                    } else {
+                      // If start cleared, ensure endDate is not in the past
+                      if (endDate && endDate < todayStr) {
+                        setEndDate("")
+                      }
+                    }
+                  }}
                   className="w-full pl-4 pr-2 h-12 border border-orange-200/50 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400 focus:border-orange-400"
                 />
               </div>
@@ -133,7 +159,21 @@ export function SearchSection() {
                 <input
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate ? addDaysStr(startDate, 1) : todayStr}
+                  onChange={(e) => {
+                    const nextEnd = e.target.value
+                    // Enforce end date strictly AFTER start date when start is set
+                    if (startDate && nextEnd && nextEnd <= startDate) {
+                      setEndDate(addDaysStr(startDate, 1))
+                      return
+                    }
+                    // Prevent selecting past dates
+                    if (nextEnd && nextEnd < todayStr) {
+                      setEndDate("")
+                      return
+                    }
+                    setEndDate(nextEnd)
+                  }}
                   className="w-full pl-4 pr-2 h-12 border border-orange-200/50 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400 focus:border-orange-400"
                 />
               </div>

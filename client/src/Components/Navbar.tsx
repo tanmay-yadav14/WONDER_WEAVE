@@ -1,8 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Compass, X, Menu } from "lucide-react";
-import { ThemeToggle } from "./ThemeToggle";
+import { Compass, X, Menu, User, Settings, BookmarkCheck, LogOut } from "lucide-react";
+// import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "./Button";
+import Avatar from "./ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 
 export function Navbar() {
@@ -80,7 +88,38 @@ export function Navbar() {
               </Button>
             </>
           )}
-          <ThemeToggle />
+          {/* Replaced ThemeToggle with profile avatar dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <div className="relative h-10 w-10 rounded-full hover:bg-orange-50 transition-colors cursor-pointer flex items-center justify-center">
+                <Avatar
+                  src="/travel-user-avatar.jpg"
+                  alt="Profile"
+                  className="h-10 w-10 border-2 border-transparent bg-gradient-to-br from-orange-400 to-pink-400 p-0.5"
+                  fallback={
+                    <span className="bg-gradient-to-br from-orange-50 to-pink-50 text-orange-600 w-full h-full flex items-center justify-center">
+                      <User className="h-5 w-5" />
+                    </span>
+                  }
+                />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuItem className="cursor-pointer hover:bg-orange-50 transition-colors">
+                <Settings className="mr-2 h-4 w-4 text-orange-500" />
+                <span>Update Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/saved')} className="cursor-pointer hover:bg-orange-50 transition-colors">
+                <BookmarkCheck className="mr-2 h-4 w-4 text-orange-500" />
+                <span>Saved Itinerary</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-destructive/10 text-destructive transition-colors">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="outline"
             size="icon"

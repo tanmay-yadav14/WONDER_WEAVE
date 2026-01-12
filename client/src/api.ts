@@ -1,8 +1,21 @@
 
 import axios from "axios";
 
-// Use env when available, fallback to deployed backend
-const API_URL =  (import.meta as any).env?.VITE_API_URL || "https://wonder-weave-2.onrender.com/api";
+// Determine API URL based on environment
+let API_URL: string;
+
+if ((import.meta as any).env?.VITE_API_URL) {
+  // If VITE_API_URL env var is set, use it
+  API_URL = (import.meta as any).env.VITE_API_URL;
+} else if (import.meta.env.DEV) {
+  // Development: use local backend
+  API_URL = "http://localhost:5000/api";
+} else {
+  // Production: use deployed backend
+  API_URL = "https://wonder-weave-2.onrender.com/api";
+}
+
+console.log("🔌 API_URL:", API_URL, "| DEV mode:", import.meta.env.DEV);
 
 export interface AuthResponse {
     token: string;
@@ -175,9 +188,9 @@ export const searchFlights = async (
 
 export const  getErrorMessage = (error: unknown): string => {
     if (axios.isAxiosError(error)) {
-        return (
-            (error.response?.data as { message: string })?.message || error.message || "An unknown error occurred"
-        );
+        const data = error.response?.data as any;
+        // Handle both { error: string } and { message: string } formats
+        return data?.error || data?.message || error.message || "An unknown error occurred";
     }
     return "An unknown error occurred";
 }

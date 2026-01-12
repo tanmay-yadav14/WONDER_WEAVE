@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthBtn } from "./AuthBtn";
-import { SignupUser } from "../api";
+import { SignupUser, getErrorMessage } from "../api";
 
 interface SignupProps {
   onSwitchToLogin: () => void;
@@ -13,12 +13,12 @@ export default function Signup({ onSwitchToLogin }: SignupProps) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  ;
-
   const navigate = useNavigate();
+  console.log("Signup component rendered");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("handleSignup called", { username, email, password });
     try {
       const data = await SignupUser({username, email, password });
       console.log("Signup successful:", data);
@@ -26,7 +26,7 @@ export default function Signup({ onSwitchToLogin }: SignupProps) {
       navigate("/SearchPage", { replace: true, state: { fromAuth: true } });
     } catch (error) {
       console.error("Signup failed:", error);
-      alert("Signup failed. Please try again.");
+      alert("Signup failed: " + getErrorMessage(error));
     }
   };
 

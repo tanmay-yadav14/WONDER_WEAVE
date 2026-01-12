@@ -12,9 +12,11 @@ export function Login({ onSwitchToSignUp }: LoginProps) {
   const [email, setEmail] =  useState("");
   const [password, setPassword] =  useState("");
   const navigate = useNavigate();
+  console.log("Login component rendered");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("handleLogin called", { email, password });
     try {
       const data = await LoginUser({ email, password });
       localStorage.setItem("token", data.token);

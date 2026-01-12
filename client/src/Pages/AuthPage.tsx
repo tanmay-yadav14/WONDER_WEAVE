@@ -6,11 +6,13 @@ import Signup from "../Components/Signup";
 
 export function AuthPage() {
     const [isLogin, setIsLogin] = useState(false);
+    console.log("AuthPage rendered, isLogin:", isLogin);
     const navigate = useNavigate();
 
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (token) {
+            console.log("Token found, redirecting to SearchPage");
             navigate("/SearchPage", { replace: true });
         }
     }, [navigate]);

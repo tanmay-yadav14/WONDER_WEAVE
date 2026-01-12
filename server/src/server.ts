@@ -151,9 +151,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// REQUIRED: handle browser preflight
-app.options("*", cors(corsOptions));
-
 
 /* -------------------- RATE LIMIT (SAFE) -------------------- */
 const limiter = rateLimit({

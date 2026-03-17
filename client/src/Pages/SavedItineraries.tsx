@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { listItineraries, type ItineraryDoc } from "../api";
+import { getItinerary, listItineraries, type ItineraryDoc } from "../api";
 import { Calendar, Users, MapPin } from "lucide-react";
 
 export default function SavedItineraries() {
   const [items, setItems] = useState<ItineraryDoc[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,6 +79,25 @@ export default function SavedItineraries() {
                   <span className="flex items-center gap-1"><Users className="h-4 w-4" />{it.guests} traveler{it.guests > 1 ? "s" : ""}</span>
                 </div>
                 <div className="text-xs text-pink-700 mt-2">{it.items?.length || 0} items • {it.totalDays} days</div>
+                <div className="mt-4 flex justify-end">
+                  <button
+                    disabled={openingId === it._id}
+                    onClick={async () => {
+                      try {
+                        setOpeningId(it._id);
+                        const full = await getItinerary(it._id);
+                        navigate("/TravelItineraryPage", { state: { savedItinerary: full } });
+                      } catch (_e) {
+                        setError("Failed to open itinerary. Please try again.");
+                      } finally {
+                        setOpeningId(null);
+                      }
+                    }}
+                    className="px-3 py-2 rounded bg-pink-500 text-white hover:bg-pink-600 disabled:opacity-60"
+                  >
+                    {openingId === it._id ? "Opening…" : "Open"}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

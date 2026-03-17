@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ItemCard } from "../Components/ItemCard";
 import { ItineraryCard } from "../Components/ItineraryCard";
 import { Star, Plane, Hotel, UtensilsCrossed, MapPin, Clock, X, Heart, Save, Calendar, Users, CheckCircle, Coffee, Plus, Download } from "lucide-react";
-import { saveItinerary, getErrorMessage } from "../api";
+import { saveItinerary, getErrorMessage, type ItineraryDoc } from "../api";
 
 // Dummy replacements for shadcn/ui components
 const Button = (props: any) => <button {...props} />;
@@ -254,12 +254,13 @@ export default function TravelItineraryPage() {
   const discovery = location?.state?.discovery as
     | { center: { lat: number; lon: number }; hotels: any[]; restaurants: any[]; places: any[] }
     | undefined;
-  const queryPlace = location?.state?.query as string | undefined;
+  const savedItinerary = location?.state?.savedItinerary as ItineraryDoc | undefined;
+  const queryPlace = (location?.state?.query as string | undefined) ?? (savedItinerary?.place ?? undefined);
   const flights = location?.state?.flights as any | undefined;
   const fromCity = location?.state?.fromCity as string | undefined;
-  const startDate = location?.state?.startDate as string | undefined;
-  const endDate = location?.state?.endDate as string | undefined;
-  const guests = (location?.state?.guests as number | undefined) ?? 1;
+  const startDate = (location?.state?.startDate as string | undefined) ?? (savedItinerary?.startDate ?? undefined);
+  const endDate = (location?.state?.endDate as string | undefined) ?? (savedItinerary?.endDate ?? undefined);
+  const guests = (location?.state?.guests as number | undefined) ?? (savedItinerary?.guests ?? 1);
 
   const totalDays = useMemo(() => {
     if (!startDate || !endDate) return 7;
@@ -272,7 +273,9 @@ export default function TravelItineraryPage() {
   // --- All state and logic from test.tsx ---
   // Copied from test.tsx TravelItinerary function
   const [selectedDay, setSelectedDay] = useState(1);
-  const [itineraryItems, setItineraryItems] = useState(initialItinerary);
+  const [itineraryItems, setItineraryItems] = useState<ItineraryItem[]>(
+    () => ((savedItinerary?.items as any[]) as ItineraryItem[] | undefined) ?? initialItinerary
+  );
   const [favorites, setFavorites] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   // Removed unused selectedCategory state
@@ -576,8 +579,7 @@ export default function TravelItineraryPage() {
 
   const handlePrintPdf = () => {
     const title = queryPlace ? `${queryPlace} Itinerary` : "Travel Itinerary";
-    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1024,height=768");
-    if (!printWindow) return alert("Popup blocked. Please allow popups to download PDF.");
+    // Avoid popup blockers by printing via a hidden iframe.
 
     const dateLine = startDate && endDate
       ? `${new Date(startDate).toLocaleDateString()} – ${new Date(endDate).toLocaleDateString()} (${totalDays} days)`
@@ -680,9 +682,48 @@ export default function TravelItineraryPage() {
 </body>
 </html>`;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.setAttribute("aria-hidden", "true");
+
+    const cleanup = () => {
+      try { iframe.remove(); } catch (_) {}
+    };
+
+    iframe.onload = () => {
+      try {
+        const w = iframe.contentWindow;
+        if (!w) throw new Error("No iframe window");
+        // Give layout a tick before printing.
+        setTimeout(() => {
+          try {
+            w.focus();
+            w.print();
+          } finally {
+            // Cleanup after print dialog is opened.
+            setTimeout(cleanup, 1000);
+          }
+        }, 50);
+      } catch (_e) {
+        cleanup();
+        alert("Unable to start PDF download. Please try again.");
+      }
+    };
+
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument;
+    if (!doc) {
+      cleanup();
+      return alert("Unable to start PDF download. Please try again.");
+    }
+    doc.open();
+    doc.write(html);
+    doc.close();
   };
 
   // --- Full JSX from test.tsx ---
@@ -1037,7 +1078,9 @@ export default function TravelItineraryPage() {
                   </DialogTitle>
                 </DialogHeader>
                 <DialogDescription className="mb-4 text-pink-800">
-                  `Download or share your personalized `${queryPlace?.toUpperCase}` itinerary`.
+                  Download or share your personalized{" "}
+                  <span className="font-semibold">{(queryPlace || "travel").toUpperCase()}</span>{" "}
+                  itinerary.
                 </DialogDescription>
                 <div className="flex gap-4">
                   <Button onClick={handlePrintPdf} className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600 flex items-center gap-2">

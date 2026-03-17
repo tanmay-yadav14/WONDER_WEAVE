@@ -46,7 +46,16 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem("token");
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        // Axios v1 may use an AxiosHeaders instance; set defensively.
+        const headersAny = config.headers as any;
+        if (headersAny && typeof headersAny.set === "function") {
+            headersAny.set("Authorization", `Bearer ${token}`);
+        } else {
+            config.headers = {
+                ...(config.headers as any),
+                Authorization: `Bearer ${token}`,
+            };
+        }
     }
     return config;
 })
@@ -128,13 +137,23 @@ export interface ItineraryDoc extends SaveItineraryRequest {
     updatedAt: string;
 }
 
+const authHeader = () => {
+    const token = localStorage.getItem("token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export const saveItinerary = async (payload: SaveItineraryRequest): Promise<ItineraryDoc> => {
-    const res = await api.post<ItineraryDoc>("itineraries", payload);
+    const res = await api.post<ItineraryDoc>("itineraries", payload, { headers: authHeader() });
     return res.data;
 }
 
 export const listItineraries = async (): Promise<ItineraryDoc[]> => {
-    const res = await api.get<ItineraryDoc[]>("itineraries");
+    const res = await api.get<ItineraryDoc[]>("itineraries", { headers: authHeader() });
+    return res.data;
+}
+
+export const getItinerary = async (id: string): Promise<ItineraryDoc> => {
+    const res = await api.get<ItineraryDoc>(`itineraries/${encodeURIComponent(id)}`, { headers: authHeader() });
     return res.data;
 }
 

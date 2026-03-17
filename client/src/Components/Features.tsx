@@ -6,7 +6,7 @@ import { features } from "../data/features";
 export function Features () {
     return (
                 <section id="features" className="py-20">
-          <div className="mx-auto w-full max-w-7xl px-4">
+          <div className="mx-auto w-full max-w-screen-2xl px-4">
             <HeaderBlock
               eyebrow="Why Choose Us"
               title="Made for Memorable Journeys"

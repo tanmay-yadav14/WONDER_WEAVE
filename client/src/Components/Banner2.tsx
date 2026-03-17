@@ -5,7 +5,7 @@ export function Banner2 () {
     return (
          <section className="py-16 bg-gradient-to-r from-orange-500 via-pink-500 to-rose-600 text-white relative overflow-hidden">
           <div className="absolute inset-y-0 -right-10 w-1/2 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.25),transparent_60%)]" />
-          <div className="mx-auto w-full max-w-7xl px-4 text-center relative">
+          <div className="mx-auto w-full max-w-screen-2xl px-4 text-center relative">
             <motion.h2
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}

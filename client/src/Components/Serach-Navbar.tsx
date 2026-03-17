@@ -20,7 +20,7 @@ export function SearchNavbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-white backdrop-blur supports-[backdrop-filter]:bg-white/90">
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4">
+      <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center justify-between px-4">
         {/* <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-lg bg-orange-600 flex items-center justify-center shadow-md">

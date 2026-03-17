@@ -42,7 +42,7 @@ export function Navbar() {
   };
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-md">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center justify-between px-4">
         <a href="#" className="flex items-center gap-2">
           <Compass className="h-6 w-6 text-orange-500" />
           <span className="text-xl font-extrabold tracking-tight">
@@ -140,7 +140,7 @@ export function Navbar() {
         className={`md:hidden overflow-hidden transition-[max-height] duration-300 bg-white/80 backdrop-blur ${mobileOpen ? "max-h-96" : "max-h-0"
           }`}
       >
-        <div className="container mx-auto px-4 py-4 grid gap-2">
+        <div className="mx-auto grid w-full max-w-screen-2xl gap-2 px-4 py-4">
           {["Home", "Destinations", "Features", "About", "Contact"].map(
             (item) => (
               <a

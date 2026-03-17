@@ -60,7 +60,7 @@ export function Destination () {
 
     return (
         <section id="destinations" className="py-20 bg-slate-50 dark:bg-white">
-                  <div className="container px-4">
+                  <div className="mx-auto w-full max-w-7xl px-4">
                     <HeaderBlock
                       eyebrow="Top Picks"
                       title="Popular Destinations"

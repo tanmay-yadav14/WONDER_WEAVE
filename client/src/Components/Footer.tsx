@@ -6,7 +6,7 @@ import { Facebook, Twitter } from "lucide-react"
 export function Footer () {
     return (
         <footer id="contact" className="bg-slate-900 text-white py-12">
-        <div className="container px-4">
+        <div className="mx-auto w-full max-w-7xl px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">

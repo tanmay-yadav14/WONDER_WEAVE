@@ -3,10 +3,12 @@ import { Request, Response, NextFunction } from "express";
 import env from "../config/env";
 
 export const protect = (req: Request, res: Response, next: NextFunction) => {
-    let token;
+    let token: string | undefined;
 
-    if(req.headers?.authorization?.startsWith("Bearer")) {
-        token = req.headers.authorization.split(" ")[1];
+    const authHeader = (req.headers?.authorization ?? "") as string;
+    if (typeof authHeader === "string" && authHeader.length) {
+        const match = authHeader.match(/^Bearer\s+(.+)$/i);
+        if (match?.[1]) token = match[1].trim();
     }
 
     if(!token) return res.status(401).json({ error: "Not authorized, no token"});

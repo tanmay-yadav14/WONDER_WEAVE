@@ -3,6 +3,8 @@
 import { SearchNavbar } from "../Components/Serach-Navbar"
 import { SearchSection } from "../Components/SearchSection"
 import { SearchDestinationCard } from "../Components/Destination-Card"
+import { useNavigate } from "react-router-dom"
+import { discoverPlaces, getErrorMessage } from "../api"
 
 import bali from "../assets/bali.jpg";
 import patagonia from "../assets/Patagonia.jpg";
@@ -75,9 +77,53 @@ const popularDestinations = [
 ]
 
 export default function SearchPage() {
-  const handleDestinationClick = (id: string) => {
-    console.log("Navigate to destination:", id)
-    // Handle navigation to itinerary page
+  const navigate = useNavigate()
+
+  const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`)
+  const formatDate = (d: Date) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+
+  const parseDurationToDays = (duration: string): number => {
+    // Examples: "5-7 days", "4-6 days", "7-10 days", "10-14 days"
+    const nums = (duration.match(/\d+/g) || []).map((n) => Number(n)).filter((n) => Number.isFinite(n))
+    if (!nums.length) return 7
+    // Use the upper bound so the itinerary covers the full range advertised.
+    return Math.max(1, Math.min(30, Math.max(...nums)))
+  }
+
+  const handleDestinationClick = async (id: string) => {
+    const destination = popularDestinations.find((d) => d.id === id)
+    if (!destination) return
+
+    try {
+      const totalDays = parseDurationToDays(destination.duration)
+      const start = new Date()
+      const end = new Date(start)
+      end.setDate(start.getDate() + (totalDays - 1))
+
+      const discovery = await discoverPlaces({
+        place: destination.name,
+        radiusMeters: 5000,
+        limit: 20,
+        wantHotels: true,
+        wantRestaurants: true,
+        wantCategories: ["attraction", "museum", "temple", "park", "monument", "zoo"],
+      })
+
+      navigate("/TravelItineraryPage", {
+        state: {
+          discovery,
+          flights: undefined,
+          query: destination.name,
+          startDate: formatDate(start),
+          endDate: formatDate(end),
+          guests: 1,
+          totalDays,
+        },
+      })
+    } catch (e) {
+      alert(`Could not open itinerary. ${getErrorMessage(e)}`)
+    } finally {
+    }
   }
 
   return (
@@ -98,7 +144,11 @@ export default function SearchPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {popularDestinations.map((destination) => (
-                <SearchDestinationCard key={destination.id} {...destination} onClick={handleDestinationClick} />
+                <SearchDestinationCard
+                  key={destination.id}
+                  {...destination}
+                  onClick={handleDestinationClick}
+                />
               ))}
             </div>
           </div>

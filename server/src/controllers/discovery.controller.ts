@@ -1,7 +1,19 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
+import { LRUCache } from 'lru-cache';
+import qs from 'qs';
 import { geocode, fetchPlaces, categories } from '../services/geoapify.service';
 import { isVegetarianFriendly, normalizeCuisines, distanceSort } from '../utils/geoapify';
+
+const responseCache = new LRUCache<string, any>({
+  max: 500,
+  ttl: 1000 * 60 * 5, // 5 minutes
+});
+
+function cacheKey(prefix: string, payload: Record<string, any>) {
+  // Stable stringify for consistent keys across requests.
+  return `${prefix}:${qs.stringify(payload, { arrayFormat: 'brackets', sort: (a, b) => a.localeCompare(b) })}`;
+}
 
 const placeOrCoords = z.object({
   place: z.string().trim().min(1).optional(),
@@ -15,8 +27,12 @@ const placeOrCoords = z.object({
 
 export async function geocodeHandler(req: Request, res: Response) {
   const q = z.object({ place: z.string().min(1) }).parse(req.query);
+  const ck = cacheKey('geocodeHandler', { place: q.place.trim().toLowerCase() });
+  const cached = responseCache.get(ck);
+  if (cached) return res.json(cached);
   const ll = await geocode(q.place);
   if (!ll) return res.status(404).json({ error: { message: 'Place not found' } });
+  responseCache.set(ck, ll);
   res.json(ll);
 }
 
@@ -34,6 +50,9 @@ async function ensureCoords(q: z.infer<typeof placeOrCoords>) {
 export async function hotelsHandler(req: Request, res: Response) {
   const q = placeOrCoords.parse(req.query as any);
   const center = await ensureCoords(q);
+  const ck = cacheKey('hotelsHandler', { ...q, center });
+  const cached = responseCache.get(ck);
+  if (cached) return res.json(cached);
 
   const features = await fetchPlaces(
     categories.hotels,
@@ -46,7 +65,9 @@ export async function hotelsHandler(req: Request, res: Response) {
     .sort(distanceSort)
     .map(toClientPlace);
 
-  res.json({ center, count: cleaned.length, results: cleaned });
+  const out = { center, count: cleaned.length, results: cleaned };
+  responseCache.set(ck, out);
+  res.json(out);
 }
 
 // -------- Restaurants --------
@@ -57,6 +78,9 @@ export async function restaurantsHandler(req: Request, res: Response) {
   }).parse(req.query as any);
 
   const center = await ensureCoords(q);
+  const ck = cacheKey('restaurantsHandler', { ...q, center });
+  const cached = responseCache.get(ck);
+  if (cached) return res.json(cached);
 
   const cuisineHints = normalizeCuisines(q.cuisines?.split(','));
   const features = await fetchPlaces(
@@ -80,7 +104,9 @@ export async function restaurantsHandler(req: Request, res: Response) {
     .sort(distanceSort)
     .map(toClientPlace);
 
-  res.json({ center, count: cleaned.length, results: cleaned });
+  const out = { center, count: cleaned.length, results: cleaned };
+  responseCache.set(ck, out);
+  res.json(out);
 }
 
 // -------- Attractions / categories --------
@@ -90,6 +116,9 @@ export async function placesByCategoriesHandler(req: Request, res: Response) {
   }).parse(req.query as any);
 
   const center = await ensureCoords(q);
+  const ck = cacheKey('placesByCategoriesHandler', { ...q, center });
+  const cached = responseCache.get(ck);
+  if (cached) return res.json(cached);
 
   const keys = q.categories.split(',').map(s => s.trim().toLowerCase());
   const cats = categories.fromKeys(keys);
@@ -108,7 +137,9 @@ export async function placesByCategoriesHandler(req: Request, res: Response) {
     .sort(distanceSort)
     .map(toClientPlace);
 
-  res.json({ center, count: cleaned.length, results: cleaned });
+  const out = { center, count: cleaned.length, results: cleaned };
+  responseCache.set(ck, out);
+  res.json(out);
 }
 
 // -------- One-shot Discover (hotels + restaurants + categories) --------
@@ -131,6 +162,20 @@ export async function discoverHandler(req: Request, res: Response) {
   }).parse(req.body);
 
   const center = await ensureCoords(body as any);
+  const ck = cacheKey('discoverHandler', {
+    ...body,
+    // normalize place to avoid cache misses due to case/whitespace
+    place: body.place?.trim().toLowerCase(),
+    center,
+    restaurantFilter: body.restaurantFilter
+      ? {
+          ...body.restaurantFilter,
+          cuisines: normalizeCuisines(body.restaurantFilter.cuisines),
+        }
+      : undefined,
+  });
+  const cached = responseCache.get(ck);
+  if (cached) return res.json(cached);
 
   let hotels: any[] = [];
   let restaurants: any[] = [];
@@ -164,12 +209,14 @@ export async function discoverHandler(req: Request, res: Response) {
     }
   }
 
-  res.json({
+  const out = {
     center,
     hotels,
     restaurants,
     places
-  });
+  };
+  responseCache.set(ck, out);
+  res.json(out);
 }
 
 // ---------- Helpers ----------

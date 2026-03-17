@@ -261,15 +261,20 @@ export default function TravelItineraryPage() {
   const startDate = (location?.state?.startDate as string | undefined) ?? (savedItinerary?.startDate ?? undefined);
   const endDate = (location?.state?.endDate as string | undefined) ?? (savedItinerary?.endDate ?? undefined);
   const guests = (location?.state?.guests as number | undefined) ?? (savedItinerary?.guests ?? 1);
+  const totalDaysFromCard = location?.state?.totalDays as number | undefined;
 
   const totalDays = useMemo(() => {
+    if (typeof totalDaysFromCard === "number" && Number.isFinite(totalDaysFromCard)) {
+      const clamped = Math.max(1, Math.min(30, Math.floor(totalDaysFromCard)));
+      return clamped || 1;
+    }
     if (!startDate || !endDate) return 7;
     const start = new Date(startDate);
     const end = new Date(endDate);
     const diffMs = end.getTime() - start.getTime();
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
     return Math.max(1, Math.min(30, days || 1));
-  }, [startDate, endDate]);
+  }, [startDate, endDate, totalDaysFromCard]);
   // --- All state and logic from test.tsx ---
   // Copied from test.tsx TravelItinerary function
   const [selectedDay, setSelectedDay] = useState(1);
